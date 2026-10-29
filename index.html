@@ -770,6 +770,36 @@ window.DOC_PAGES = [
     save(LS.text, text);
   }
 
+  function addBallisticShaderWork() {
+    if (layout.ballisticShaderVersion === 1) return;
+    const page = layout.pages.find(p => p.id === 'balistick-1');
+    if (!page) return;
+    page.label = 'Ballistic｜制作中';
+    const head = page.blocks.find(b => b.type === 'head');
+    if (head) {
+      head.k = 'Ballistic'; head.sub = "制作中｜約10人規模で開発する対戦アクションゲーム。グラフィックスを担当し、Unity 6 / URP向けのキャラクター用トゥーンシェーダーと、演出・設定を支えるC#・エディタ拡張を制作しています。";
+      delete text[head.uid + '.k']; delete text[head.uid + '.sub'];
+    }
+    const specs = page.blocks.find(b => b.type === 'specs');
+    if (specs) specs.rows = specs.rows.map(row => row[0] === '開発環境' ? [row[0], 'Unity 6 / URP'] : row[0] === '担当箇所' ? [row[0], 'グラフィックス／トゥーンシェーダー・ツール開発'] : row);
+    if (specs) { delete text[specs.uid + '.開発環境']; delete text[specs.uid + '.担当箇所']; }
+    const role = page.blocks.find(b => b.uid === 'b-balistick-role');
+    if (role) {
+      role.k = '開発したもの｜キャラクター用トゥーンシェーダー'; role.p = "「アニメ調の絵づくり」と「敵味方がひと目でわかること」の両立を目標に、キャラクター用トゥーンシェーダーを開発しました。1ファイル4パス（ForwardLit / Outline / ShadowCaster / DepthOnly）で構成し、エディタ拡張とゲーム側のC#も含めて実装しています。";
+      delete text[role.uid + '.k']; delete text[role.uid + '.p'];
+    }
+    const additions = [{"type": "tags", "uid": "b-ballistic-tech", "k": "技術構成", "chips": ["Unity 6 / URP", "HLSL / ShaderLab", "C#", "4パス構成", "ShaderGUI", "MaterialPropertyBlock"]}, {"type": "h1", "uid": "b-ballistic-shader-features", "k": "トゥーンシェーダーで工夫した点"}, {"type": "p", "uid": "b-ballistic-feature-1", "k": "材質ごとのランプ", "p": "ランプテクスチャの行をShading IDに対応させ、1枚のテクスチャで肌・布・金属などに異なる陰影を付けられるようにしました。影の色を紫寄りに調整し、アニメ調の印象を作っています。"}, {"type": "p", "uid": "b-ballistic-feature-2", "k": "黒くならない落ち影", "p": "落ち影の中の明るさに下限を設け、影に入ってもキャラクターの色が残るようにしました。環境光は真上向きで取得し、セル画らしい平坦さを出しています。"}, {"type": "p", "uid": "b-ballistic-feature-3", "k": "顔の影", "p": "顔の法線を球状に置き換え、鼻や目のまわりにまだらな影が出るのを抑えました。当初はUVで顔の範囲を判定していましたが、AI生成テクスチャではUVが散らばっていたため、「頭からの距離＋正面方向」による判定へ切り替えました。"}, {"type": "p", "uid": "b-ballistic-feature-4", "k": "アウトライン", "p": "線の太さを画面のピクセル幅で指定し、解像度が変わっても安定するようにしました。角で線が割れないよう、取り込み時にスムーズ法線をUV2へ焼き込みます。Tangentは法線マップ用に確保し、線の色はベースカラーの明度を下げて作っています。"}, {"type": "p", "uid": "b-ballistic-feature-5", "k": "チームハイライト", "p": "見るプレイヤーを基準に、敵は赤、味方はターコイズの縁取りで識別できるようにしました。オンラインでチーム情報の確定が遅れた場合も、確定した時点で表示を更新します。値はMaterialPropertyBlockで渡し、ほかのスクリプトの設定と干渉しないようにしています。"}, {"type": "p", "uid": "b-ballistic-feature-6", "k": "ポストエフェクト", "p": "Bloomを控えめに調整し、設定画面からオン・オフできるようにしました。古いセーブデータとの互換性も維持しています。トーンマップにはNeutralを採用し、チーム識別に使う赤の色味がずれるのを抑えました。"}, {"type": "p", "uid": "b-ballistic-feature-7", "k": "制作を支えるツール", "p": "日本語で項目を出し分けるカスタムShaderGUIと、設定画面を自動で生成するエディタ拡張を制作しました。シェーダーの調整からゲーム内の設定反映までを扱える構成にしています。"}];
+    const gallery = page.blocks.findIndex(b => b.uid === 'b-balistick-gallery-title');
+    page.blocks.splice(gallery >= 0 ? gallery : page.blocks.length, 0, ...additions);
+    walkBlocks(b => {
+      if (b.uid !== 'b-balistick-card') return;
+      b.k = 'Ballistic'; b.p = '制作中｜Unity 6 / URP / 約10人。キャラクター用トゥーンシェーダー、チーム識別ハイライト、制作支援ツールなど、グラフィックス周りを担当しています。';
+      delete text[b.uid + '.k']; delete text[b.uid + '.p'];
+    });
+    layout.ballisticShaderVersion = 1;
+    save(LS.text, text);
+  }
+
   function initData() {
     const baked = window.__BAKED || {};
     layout = baked.layout || read(LS.layout, null) || { seq: 1, pages: deep(window.DOC_PAGES) };
@@ -797,6 +827,7 @@ window.DOC_PAGES = [
     addAutumnTeamWorks();
     addNprEditorScreenshot();
     updateTeamRolePresentation();
+    addBallisticShaderWork();
     save(LS.layout, layout);
   }
   function walkBlocks(fn) {
