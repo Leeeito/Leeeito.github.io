@@ -1,0 +1,61 @@
+classDiagram
+direction LR
+class Panel["bpy.types.Panel"]
+class Operator["bpy.types.Operator"]
+class MYNT_PT_main {
+  draw(context)
+}
+class MYNT_OT_flatten {
+  execute(context)
+}
+class MYNT_OT_average {
+  execute(context)
+}
+class MYNT_OT_selected_align {
+  execute(context)
+}
+class MYNT_OT_toggle_vertex_normals {
+  execute(context)
+}
+class MYNT_OT_toggle_face_orientation {
+  execute(context)
+}
+class edit_selected_normals {
+  <<function>>
+  context
+  modifier
+}
+class normal_logic {
+  <<module>>
+  flatten_normals(...)
+  average_normals(...)
+  align_to_target(...)
+  blend_normals(...)
+}
+class overlay["context.space_data.overlay"] {
+  <<BlenderAPI>>
+  show_vertex_normals
+  show_face_orientation
+}
+Panel <|-- MYNT_PT_main
+Operator <|-- MYNT_OT_flatten
+Operator <|-- MYNT_OT_average
+Operator <|-- MYNT_OT_selected_align
+Operator <|-- MYNT_OT_toggle_vertex_normals
+Operator <|-- MYNT_OT_toggle_face_orientation
+MYNT_PT_main ..> MYNT_OT_flatten : layout.operator
+MYNT_PT_main ..> MYNT_OT_average : layout.operator
+MYNT_PT_main ..> MYNT_OT_selected_align : layout.operator
+MYNT_PT_main ..> MYNT_OT_toggle_vertex_normals : layout.operator
+MYNT_PT_main ..> MYNT_OT_toggle_face_orientation : layout.operator
+MYNT_OT_flatten ..> edit_selected_normals
+MYNT_OT_average ..> edit_selected_normals
+MYNT_OT_selected_align ..> edit_selected_normals
+MYNT_OT_flatten ..> normal_logic : flatten_normals
+MYNT_OT_average ..> normal_logic : average / blend
+MYNT_OT_selected_align ..> normal_logic : align_to_target
+MYNT_OT_toggle_vertex_normals ..> overlay
+MYNT_OT_toggle_face_orientation ..> overlay
+note for MYNT_OT_average "Scene.mynt_strength を参照"
+note for edit_selected_normals "クラスではなく共通関数 / __init__.py"
+note for normal_logic "クラスではなくモジュール / mathutils.Vector を使用"
