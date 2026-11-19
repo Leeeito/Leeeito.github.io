@@ -46,3 +46,5 @@ index.html だけでなく、works/・assets/ と共通ファイルも必要で�
 - site-template.html / publish-manifest.json: 全ページの書き出し用テンプレートとファイル一覧
 
 2026-11-03: 作品別ページへの分割、NPRToonRendererの機能更新、実コードに基づくアドオンクラス図を反映。
+
+2026-11-19: NPRToonRendererをネイティブDirectX 12・白凪町・共通NPR/PBR調整へ更新。実行画像の3プリセット比較、5つのコード解説、条件付きのGPU計測結果を掲載しました。説明資料は [NPR_TECHNICAL_NOTES.md](NPR_TECHNICAL_NOTES.md) にまとめています。

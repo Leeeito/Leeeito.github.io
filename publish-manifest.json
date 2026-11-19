@@ -46,7 +46,14 @@
     "assets/npr-shadow-off.jpg",
     "assets/npr-shadow-on.jpg",
     "assets/portrait.png",
-    "assets/profile-group.jpg"
+    "assets/profile-group.jpg",
+    "assets/npr-station-hybrid-20261117.png",
+    "assets/npr-station-npr-20261117.png",
+    "assets/npr-station-pbr-20261117.png",
+    "assets/npr-river-20261116.png",
+    "assets/npr-overlook-20261116.png",
+    "assets/npr-summit-20261116.png",
+    "NPR_TECHNICAL_NOTES.md"
   ],
   "version": 1
 }

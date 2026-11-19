@@ -26,7 +26,7 @@
 
   const FIXED_ROUTES = [
     {key:'home',label:'ホーム',group:'',ids:['cover','toc','profile','end']},
-    {key:'nprtoonrenderer',label:'NPRToonRenderer',group:'個人制作',prefix:'npr-',image:'assets/exploration-forest.png',summary:'NPR / PBRの描画と、探索・撮影を支える専用エディター。',status:'開発中'},
+    {key:'nprtoonrenderer',label:'NPRToonRenderer',group:'個人制作',prefix:'npr-',image:'assets/npr-station-hybrid-20261117.png',summary:'NPR / PBRを融合した雪国の探索・撮影ゲーム。描画基盤・最適化・コードの工夫を紹介。',status:'開発中 / DirectX 12'},
     {key:'normal-tools',label:'Custom Normal Editing Tools',group:'個人制作',prefix:'cne-',image:'assets/cne-after.jpg',summary:'陰影を整えるBlender法線編集アドオン。実コードのクラス図を掲載。',status:'Blender / Python'},
     {key:'bloom-shift',label:'Bl∞m Shift',group:'チーム制作',prefix:'bloom-',image:'assets/bloom-anim.jpg',summary:'2Dワイヤーアクション。アニメーション実装、企画・仕様、進行管理を担当。',status:'11人 / DirectX 11'},
     {key:'neo-zip',label:'Neo Zip',group:'チーム制作',prefix:'neo-',image:'assets/neozip-title.png',summary:'Unityのマップツールと、データで組み立てるカットシーンシステム。',status:'10人 / Unity'},
@@ -89,6 +89,61 @@
     layout.pages.filter(p=>replaceIDs.has(p.id)).forEach(p=>p.blocks.forEach(clearText));
     layout.pages=layout.pages.map(p=>replaceIDs.has(p.id)?deep(published.pages.find(q=>q.id===p.id)):p);
     layout.multiPageVersion=1;
+  }
+
+  // Three-way merge: refresh unchanged published fields while retaining local edits.
+  function mergeRendererNode(base, draft, next) {
+    const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+    if(same(base,draft))return deep(next);
+    if(Array.isArray(base)&&Array.isArray(draft)&&Array.isArray(next)) {
+      if(![...base,...draft,...next].every(v=>v&&typeof v==='object'&&v.uid))return deep(draft);
+      const old=new Map(base.map(v=>[v.uid,v])),local=new Map(draft.map(v=>[v.uid,v]));
+      const nextIDs=new Set(next.map(v=>v.uid)),result=[];
+      for(const value of next) {
+        if(local.has(value.uid))result.push(old.has(value.uid)?mergeRendererNode(old.get(value.uid),local.get(value.uid),value):deep(local.get(value.uid)));
+        else if(!old.has(value.uid))result.push(deep(value));
+      }
+      for(const value of draft)if(!nextIDs.has(value.uid)&&(!old.has(value.uid)||!same(value,old.get(value.uid))))result.push(deep(value));
+      return result;
+    }
+    const object=v=>v&&typeof v==='object'&&!Array.isArray(v);
+    if(object(base)&&object(draft)&&object(next)) {
+      const result={};
+      for(const key of new Set([...Object.keys(next),...Object.keys(draft)])) {
+        if(Object.hasOwn(draft,key)) {
+          if(Object.hasOwn(next,key))result[key]=Object.hasOwn(base,key)?mergeRendererNode(base[key],draft[key],next[key]):deep(draft[key]);
+          else if(!Object.hasOwn(base,key)||!same(base[key],draft[key]))result[key]=deep(draft[key]);
+        } else if(!Object.hasOwn(base,key)&&Object.hasOwn(next,key))result[key]=deep(next[key]);
+      }
+      return result;
+    }
+    return deep(draft);
+  }
+  function migrateRendererUpdate() {
+    const published=window.PUBLISHED_DATA,version=published.layout.rendererUpdateVersion;
+    if(!version||layout.rendererUpdateVersion===version||viewOnly)return;
+    const baseline=published.rendererPreviousPages||[];
+    if(!baseline.length)return;
+    // Preserve a recoverable draft before updating content. Do not erase the prior storage keys.
+    const backupKey='eito-before-renderer-'+version;
+    try{if(!localStorage.getItem(backupKey))localStorage.setItem(backupKey,JSON.stringify({layout,text,set:settings}));}
+    catch(e){return;}
+    const old=new Map(baseline.map(p=>[p.id,p]));
+    for(const next of published.layout.pages.filter(p=>p.id.startsWith('npr-'))) {
+      const index=layout.pages.findIndex(p=>p.id===next.id);
+      if(index>=0&&old.has(next.id))layout.pages[index]=mergeRendererNode(old.get(next.id),layout.pages[index],next);
+      else if(index<0&&!old.has(next.id)) {
+        let after=0;layout.pages.forEach((p,i)=>{if(p.id.startsWith('npr-'))after=i+1;});
+        layout.pages.splice(after,0,deep(next));
+      }
+    }
+    // Redundant text overrides from an earlier export should not pin old copy forever.
+    const clearUnchanged=blocks=>blocks.forEach(b=>{
+      for(const [field,value] of Object.entries(b))if(typeof value==='string'&&text[b.uid+'.'+field]===value)delete text[b.uid+'.'+field];
+      if(b.items)clearUnchanged(b.items);
+    });
+    baseline.forEach(p=>clearUnchanged(p.blocks));
+    layout.rendererUpdateVersion=version;
   }
 
 
@@ -202,6 +257,7 @@
     text=deep(viewOnly?published.text:(read(LS.text,null)||(legacyLayout?read('eito-npr20261028-text',{}):published.text)));
     settings=Object.assign({},DEFAULTS,viewOnly?published.set:(read(LS.set,null)||published.set));
     migrateMultiPage();
+    migrateRendererUpdate();
     let seq=layout.seq||1;
     walkBlocks(b=>{if(!b.uid)b.uid='b'+(seq++);});layout.seq=seq;
     if(!viewOnly){save(LS.layout,layout);save(LS.text,text);}
@@ -243,6 +299,7 @@
   }
   // Reserve original image dimensions before lazy loading to keep navigation stable.
   const assetSizes = {"assets/npr-editor-workspace.png": [1919, 1079], "assets/bloom-anim.jpg": [1920, 1080], "assets/bloom-gantt.jpg": [1272, 276], "assets/bloom-logo.jpg": [2214, 2235], "assets/bloom-spec.jpg": [1411, 609], "assets/cne-after.jpg": [1576, 849], "assets/cne-average.jpg": [1269, 720], "assets/cne-before.jpg": [1568, 872], "assets/cne-face-back.jpg": [1560, 685], "assets/cne-face-front.jpg": [1572, 753], "assets/cne-files.jpg": [992, 586], "assets/cne-unity.jpg": [769, 429], "assets/neozip-chara.png": [587, 448], "assets/neozip-cutscene.jpg": [842, 610], "assets/neozip-maptool.jpg": [661, 602], "assets/neozip-play.jpg": [1577, 885], "assets/npr-feature.jpg": [506, 286], "assets/npr-feature2.jpg": [532, 292], "assets/npr-imgui.jpg": [434, 839], "assets/npr-main.jpg": [548, 308], "assets/npr-outline.jpg": [532, 298], "assets/npr-shadow-off.jpg": [305, 165], "assets/npr-shadow-on.jpg": [303, 169], "assets/portrait.png": [1250, 1668], "assets/profile-group.jpg": [3840, 2160], "assets/neozip-player-original.png": [512, 512], "assets/neozip-companion-original.png": [510, 825], "assets/exploration-forest.png": [1280, 720], "assets/exploration-coast.png": [1280, 720], "assets/exploration-meadow.png": [1280, 720], "assets/exploration-highlands.png": [1280, 720], "assets/exploration-cape.png": [1280, 720], "assets/exploration-snow.png": [1280, 720]};
+  for(const name of ['station-hybrid-20261117','station-npr-20261117','station-pbr-20261117','river-20261116','overlook-20261116','summit-20261116'])assetSizes['assets/npr-'+name+'.png']=[1280,720];
   function IMG(b, cls) {
     const size = assetSizes[b.img];
     const dims = size ? ' width="' + size[0] + '" height="' + size[1] + '"' : '';
@@ -256,6 +313,25 @@
   }
   function FIG(b, cls) {
     return '<figure>' + IMG(b, cls) + (b.cap !== undefined ? '<figcaption>' + T(b.uid, 'cap', b.cap, 'span') + '</figcaption>' : '') + '</figure>';
+  }
+
+  function renderEngineering(b) {
+    const code=(field)=>'<pre tabindex="0" aria-label="'+esc(b.language+' コード')+'"><code data-k="'+esc(b.uid+'.'+field)+'">'+esc(text[b.uid+'.'+field]??b[field])+'</code></pre>';
+    return '<article class="engineering-case">'+T(b.uid,'k',b.k,'h3')+
+      '<dl class="engineering-reason">'+[['problem','課題'],['approach','実装'],['result','効果']].map(([field,label])=>'<div><dt>'+label+'</dt><dd>'+T(b.uid,field,b[field],'p')+'</dd></div>').join('')+'</dl>'+
+      '<details class="code-details"><summary>コードを見る <span>'+esc(b.language)+'</span></summary>'+T(b.uid,'source',b.source,'p','code-source')+code('code')+
+      (b.code2?'<p class="code-excerpt-gap">別位置の抜粋</p>'+code('code2'):'')+T(b.uid,'codeNote',b.codeNote,'p','code-note')+'</details></article>';
+  }
+  function renderLookComparison(b) {
+    const selected=Math.min(1,b.items.length-1);
+    return '<div class="look-comparison">'+T(b.uid,'k',b.k,'h3')+T(b.uid,'p',b.p,'p')+
+      '<div class="look-options" role="group" aria-label="描画プリセットの比較">'+b.items.map((it,i)=>'<button type="button" data-look-option="'+i+'" aria-pressed="'+(i===selected)+'">'+esc(it.label)+'</button>').join('')+'</div>'+
+      '<div class="look-images">'+b.items.map((it,i)=>'<div data-look-panel="'+i+'"'+(i===selected?'':' hidden')+'>'+FIG(it)+'</div>').join('')+'</div></div>';
+  }
+  function renderBenchmark(b) {
+    return '<div class="benchmark">'+T(b.uid,'k',b.k,'h3')+
+      '<div class="benchmark-scroll" tabindex="0" role="region" aria-label="GPU時間の比較表"><table><caption>GPU描画時間（小さいほど軽い）</caption><thead><tr>'+b.columns.map(c=>'<th scope="col">'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'+b.rows.map(row=>'<tr>'+row.map((v,i)=>i===0?'<th scope="row">'+esc(v)+'</th>':'<td>'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'+
+      T(b.uid,'p',b.p,'p','benchmark-method')+T(b.uid,'note',b.note,'p','benchmark-note')+T(b.uid,'source','計測ログ：'+b.source,'p','code-source')+'</div>';
   }
 
   function renderBlock(b, page) {
@@ -283,6 +359,10 @@
           '</div>';
       }
       case 'toc': return renderWorkIndex();
+      case 'engineering': return renderEngineering(b);
+      case 'lookcompare': return renderLookComparison(b);
+      case 'benchmark': return renderBenchmark(b);
+      case 'resource': return '<div class="note">'+T(b.uid,'k',b.k,'h3')+T(b.uid,'p',b.p,'p')+'<a class="btn" href="'+esc(b.href)+'" download>'+esc(b.label)+'</a></div>';
       case 'worklink': {
         const target = layout.pages.findIndex(p => p.id === b.target);
         let imageBlock = b;
@@ -702,6 +782,12 @@
 
     document.addEventListener('click', e => {
       const t = e.target.closest('button'); if (!t) return;
+      if(t.hasAttribute('data-look-option')) {
+        const parent=t.closest('.look-comparison'),index=t.dataset.lookOption;
+        parent.querySelectorAll('[data-look-option]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lookOption===index)));
+        parent.querySelectorAll('[data-look-panel]').forEach(p=>p.hidden=p.dataset.lookPanel!==index);
+        return;
+      }
       const nav = t.getAttribute('data-nav');
       if(nav==='prev'||nav==='next'){const list=routes(),i=list.findIndex(r=>r.key===activeRoute),target=list[i+(nav==='prev'?-1:1)];if(target)location.href=routeURL(target.key);return;}
       if (t.getAttribute('data-open') === 'list') return drawer.classList.toggle('open');

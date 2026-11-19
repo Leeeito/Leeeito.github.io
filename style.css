@@ -413,3 +413,46 @@ body.editing .is.empty[data-placeholder]::after { content: "クリックして�
 .toolbar .tb-btn {flex-shrink:0;}
 .diagram-scroll {max-width:100%;}
 .page-inner,.blk-wrap,.blk {min-width:0;}
+
+/* Renderer case study: real captures, readable code and bounded measurements. */
+.engineering-case {border-top:1px solid var(--line-strong);padding:30px 0 16px;}
+.engineering-case h3,.look-comparison h3,.benchmark h3 {font-size:1.3rem;line-height:1.5;margin:0 0 20px;}
+.engineering-reason {margin:0;}
+.engineering-reason > div {display:grid;grid-template-columns:3em minmax(0,1fr);gap:18px;margin:18px 0;}
+.engineering-reason dt {font-size:.875rem;color:var(--accent);padding-top:3px;}
+.engineering-reason dd {margin:0;}
+.engineering-reason p {margin:0;}
+.code-details {margin-top:22px;border:1px solid var(--line-strong);border-radius:6px;background:var(--bg-1);}
+.code-details summary {cursor:pointer;padding:16px 20px;font-size:1rem;color:var(--text);}
+.code-details summary span {font-family:var(--font-mono);font-size:.875rem;color:var(--accent);margin-left:14px;}
+.code-details[open] summary {border-bottom:1px solid var(--line);margin-bottom:18px;}
+.code-source {font-family:var(--font-mono);font-size:.875rem;overflow-wrap:anywhere;color:var(--accent);}
+.code-details .code-source,.code-note,.code-excerpt-gap {margin:14px 20px;}
+.code-details pre {max-width:100%;overflow-x:auto;margin:16px 0;padding:18px 20px;background:#050913;overscroll-behavior-inline:contain;tab-size:4;}
+.code-details code {font-family:var(--font-mono);font-size:.875rem;line-height:1.8;color:#dce9f8;white-space:pre;}
+.code-note,.code-excerpt-gap {font-size:.875rem;line-height:1.8;}
+.look-comparison {padding-top:12px;}
+.look-options {display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 18px;}
+.look-options button {min-height:46px;flex:1;padding:10px 16px;border:1px solid var(--line-strong);border-radius:4px;background:var(--bg-1);color:var(--text-dim);font:inherit;font-size:.875rem;cursor:pointer;}
+.look-options button[aria-pressed="true"] {border-color:var(--accent);color:var(--bg-0);background:var(--accent);font-weight:700;}
+.look-images {aspect-ratio:auto;}
+.look-images img {width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;}
+.look-images [hidden] {display:none;}
+.look-comparison figcaption {font-size:.875rem;color:var(--text-dim);}
+.benchmark {border-top:1px solid var(--line-strong);padding-top:28px;}
+.benchmark-scroll {overflow-x:auto;max-width:100%;overscroll-behavior-inline:contain;margin:24px 0;}
+.benchmark table {border-collapse:collapse;width:100%;min-width:480px;font-size:.95rem;font-variant-numeric:tabular-nums;}
+.benchmark caption {text-align:left;font-size:.875rem;color:var(--text-dim);padding-bottom:14px;}
+.benchmark th,.benchmark td {padding:15px 14px;text-align:left;border-bottom:1px solid var(--line-strong);white-space:nowrap;}
+.benchmark thead th {font-size:.875rem;color:var(--text-dim);font-weight:500;}
+.benchmark td:last-child {color:var(--accent);font-weight:700;}
+.benchmark-method,.benchmark-note {font-size:.875rem;line-height:1.85;}
+.benchmark-note {padding-left:16px;border-left:2px solid var(--accent);}
+#npr-code .blk-wrap + .blk-wrap,#npr-performance .blk-wrap + .blk-wrap {margin-top:24px;}
+@media(max-width:640px){
+ .engineering-case {padding-top:24px;}.engineering-reason > div {grid-template-columns:1fr;gap:6px;}
+ .engineering-case h3,.look-comparison h3,.benchmark h3 {font-size:1.15rem;}
+ .code-details summary {padding:14px;}.code-details pre {padding:16px 14px;}
+ .code-details .code-source,.code-note,.code-excerpt-gap {margin-left:14px;margin-right:14px;}
+ .look-options {gap:6px;}.look-options button {padding:10px 6px;}
+}
